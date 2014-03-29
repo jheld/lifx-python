@@ -16,13 +16,25 @@ class LIFXBulb:
         self.recv_lightstatus(lightstatus)
 
     def __repr__(self):
-        return "<LIFXBulb %s hue:%s sat:%s bright:%s kelvin:%s on:%s>" % \
-               (self.get_addr(),
-                inttohex(self.hue),
-                inttohex(self.saturation),
-                inttohex(self.brightness),
-                self.kelvin,
-                self.power)
+        hue = inttohex(self.hue)
+        sat = inttohex(self.saturation)
+        bright = inttohex(self.brightness)
+        kelvin = self.kelvin
+        bulb_label = self.bulb_label
+        power = self.power
+        return "<LIFXBulb {addr} \
+        Hue:{hue} \
+        Sat:{sat} \
+        Bright:{bright} \
+        Kelvin:{kelvin} \
+        Label:{label} \
+        On:{power}>".format(addr=self.get_addr(), 
+                            hue = hue,
+                            sat = sat,
+                            bright = bright,
+                            kelvin = kelvin,
+                            label = bulb_label,
+                            power = power)
 
     def get_addr(self):
         return str(hexlify(self.addr), encoding='utf-8')
@@ -35,18 +47,18 @@ class LIFXBulb:
 
     def recv_lightstatus(self, lightstatus):
         self.addr = lightstatus.target
-        self.hue = lightstatus.payload.data['hue']
-        self.saturation = lightstatus.payload.data['saturation']
-        self.brightness = lightstatus.payload.data['brightness']
-        self.kelvin = lightstatus.payload.data['kelvin']
-        self.dim = lightstatus.payload.data['dim']
-        if lightstatus.payload.data['power'] > 0:
+        data = lightstatus.payload.data
+        self.hue = data['hue']
+        self.saturation = data['saturation']
+        self.brightness = data['brightness']
+        self.kelvin = data['kelvin']
+        self.dim = data['dim']
+        self.tags = data['tags']
+        self.bulb_label = str(data['bulb_label'], encoding='utf-8').strip('\00')
+        if data['power'] > 0:
             self.power = True
         else:
             self.power = False
-        self.bulb_label = str(lightstatus.payload.data['bulb_label'],
-                              encoding='utf-8').strip('\00')
-        self.tags = lightstatus.payload.data['tags']
 
     def recv_powerstate(self, powerstate):
         if powerstate.payload.data['onoff'] > 0:
