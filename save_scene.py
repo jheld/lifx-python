@@ -10,7 +10,7 @@ def tohex(datum):
 lights = lifx.get_lights()
 
 for L in lights:
-    if L.power == False:
+    if not L.power:
         continue
     line = tohex(L.addr) + ' '
     line += tohex(pack('>H', L.hue)) + ' '

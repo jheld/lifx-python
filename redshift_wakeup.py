@@ -57,7 +57,7 @@ if now < sun['dawn']:
     target = night_kelvin
 elif now < sun['sunrise']:
     period = 'sunrise'
-    total_seconds = (sun['sunrise'] - sun['dawn']).total_seconds()
+    total_seconds = (sun[period] - sun['dawn']).total_seconds()
     time_since_dawn = (now - sun['dawn']).total_seconds()
     difference = day_kelvin - night_kelvin
     target = int(night_kelvin + \
@@ -67,8 +67,8 @@ elif now < sun['sunset']:
     target = day_kelvin
 elif now < sun['dusk']:
     period = 'sunset'
-    total_seconds = (sun['dusk'] - sun['sunset']).total_seconds()
-    time_since_sunset = (now - sun['sunset']).total_seconds()
+    total_seconds = (sun['dusk'] - sun[period]).total_seconds()
+    time_since_sunset = (now - sun[period]).total_seconds()
     difference = night_kelvin - day_kelvin
     target = int(day_kelvin + \
              (float(time_since_sunset) / float(total_seconds) * difference))
@@ -87,11 +87,11 @@ if now < wakeup or now > wakeup_end or now.weekday() not in wakeup_days:
 lights = lifx.get_lights()
 
 for light in lights:
-    if len(lightlist) > 0 and light.addr not in lightlist:
+    if len(lightlist) and light.addr not in lightlist:
         print("skipping light %s. not in list", (light.get_addr(), ))
         continue
     if wakeup:
-        if light.power == False:
+        if not light.power:
             print("turning on %s" % (light.get_addr(),) )
             light.set_power(True)
             light.set_color(0, 0, 0, target, 0)
