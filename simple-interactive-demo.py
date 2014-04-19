@@ -37,6 +37,7 @@ def powerStateDriver(light):
     print('1/on')
     print('0/off')
     desiredPowerState = input('> ')
+    skipSettingPower = False
     if len(desiredPowerState):
         try:
             if int(desiredPowerState):
@@ -50,7 +51,8 @@ def powerStateDriver(light):
                 desiredPowerState = False
             else:
                 print('Skipping this light\'s power state management.')
-        if desiredPowerState != light.power:
+                skipSettingPower = True
+        if desiredPowerState != light.power and not skipSettingPower:
             light.set_power(desiredPowerState)
     else:
         print('Skipping this light\'s power state management.')
