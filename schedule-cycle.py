@@ -29,16 +29,20 @@ def startUp():
     return vars(args)
 
 def timeCycleDriver(lightsCycle,minutes):
-    global isDone
-    if not isDone:
-        print('{light} will go on, now for {time} minute(s); the rest in cycle will go off'.format(light=lightsCycle[0].bulb_label,time=minutes))
-        lightsCycle[0].set_power(True)
-        for light in lightsCycle[1:]:
-            light.set_power(False)
-        lightsCycle.append(lightsCycle[0])
-        lightsCycle.remove(lightsCycle[0])
-        timer = threading.Timer(minutes*60,timeCycleDriver,args=[lightsCycle,minutes])
-        timer.start()
+    if lightsCycle and len(lightsCycle) > 1:
+        global isDone
+        if not isDone:
+            minutes = float(abs(minutes))
+            print('unixTime: {utime}-->{light} will go on, now for {time} minute(s); the rest in cycle will go off'.format(utime=time.time(),light=lightsCycle[0].bulb_label,time=minutes))
+            lightsCycle[0].set_power(True)
+            for light in lightsCycle[1:]:
+                light.set_power(False)
+            with open('cycle_report.txt', 'a') as myfile:
+                myfile.write('light {lighton} is now on at unixTime: {utime}'.format(lighton=lightsCycle[0].bulb_label,utime=time.time()))
+            lightsCycle.append(lightsCycle[0])
+            lightsCycle.remove(lightsCycle[0])
+            timer = threading.Timer(minutes*60,timeCycleDriver,args=[lightsCycle,minutes])
+            timer.start()
 
 def driver(lightsInCycle,timeToCycle,cycleSpeed):
     timer = threading.Timer(timeToCycle*60,done,args=[lightsInCycle])
