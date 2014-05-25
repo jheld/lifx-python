@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 import lifx
-import argparse
 
+import argparse
 import time
 import sys
+import os
 import threading
 
 isDone = False
@@ -40,6 +41,7 @@ class ScheduleCycle():
     def setSpeed(self,speed):
         self.speed = speed
     def driver(lightsInCycle,timeToCycle,cycleSpeed):
+        os.remove('cycle_report.txt')
         self.setLights(lightsInCycle)
         self.setSpeed(cycleSpeed)
         self.setTimeToRun(timeToCycle)
