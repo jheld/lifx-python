@@ -9,6 +9,48 @@ import threading
 
 isDone = False
 
+class ScheduleCycle():
+    def __init__(self):
+        super().__init__()
+        self.isDone = False
+        self.lights = []
+        self.timeToRun = 0
+        self.speed = 0
+    def setLights(self, lights):
+        self.lights = lights;
+    def timeToRun(self, timeToRun):
+        self.timeToRun = timeToRun
+    def timeCycleDriver(self):
+        if self.lights and len(self.lights) > 1:
+            if not self.isDone:
+                minutes = float(abs(self.speed))
+                print('unixTime: {utime}-->{light} will go on, now for {time} minute(s); the rest in cycle will go off'.format(utime=time.time(),light=self.lights[0].bulb_label,time=minutes))
+                self.lights[0].set_power(True)
+                for light in self.lights[1:]:
+                    light.set_power(False)
+                with open('cycle_report.txt', 'a') as myfile:
+                    myfile.write('light {lighton} is now on at unixTime: {utime}\n'.format(lighton=self.lights[0].bulb_label,utime=time.time()))
+                self.lights.append(lightsCycle[0])
+                self.lights.remove(lightsCycle[0])
+                timer = threading.Timer(minutes*60,timeCycleDriver)
+                timer.start()
+            else:
+                for light in self.lights:
+                    light.set_power(False)
+    def setSpeed(self,speed):
+        self.speed = speed
+    def driver(lightsInCycle,timeToCycle,cycleSpeed):
+        self.setLights(lightsInCycle)
+        self.setSpeed(cycleSpeed)
+        self.setTimeToRun(timeToCycle)
+        timer = threading.Timer(timeToCycle*60,done)
+        timer.start()
+        self.timeCycleDriver()
+
+    def done(self, lights):
+        self.isDone = True
+        self.timeCycleDriver()
+    
 def startUp():
     parser = argparse.ArgumentParser(description='Simple lights on/off cycling through a list of bulbs.')
     parser.add_argument('-l','--label-bulb',
@@ -28,33 +70,6 @@ def startUp():
     args = parser.parse_args()
     return vars(args)
 
-def timeCycleDriver(lightsCycle,minutes):
-    if lightsCycle and len(lightsCycle) > 1:
-        global isDone
-        if not isDone:
-            minutes = float(abs(minutes))
-            print('unixTime: {utime}-->{light} will go on, now for {time} minute(s); the rest in cycle will go off'.format(utime=time.time(),light=lightsCycle[0].bulb_label,time=minutes))
-            lightsCycle[0].set_power(True)
-            for light in lightsCycle[1:]:
-                light.set_power(False)
-            with open('cycle_report.txt', 'a') as myfile:
-                myfile.write('light {lighton} is now on at unixTime: {utime}'.format(lighton=lightsCycle[0].bulb_label,utime=time.time()))
-            lightsCycle.append(lightsCycle[0])
-            lightsCycle.remove(lightsCycle[0])
-            timer = threading.Timer(minutes*60,timeCycleDriver,args=[lightsCycle,minutes])
-            timer.start()
-
-def driver(lightsInCycle,timeToCycle,cycleSpeed):
-    timer = threading.Timer(timeToCycle*60,done,args=[lightsInCycle])
-    timer.start()
-    timeCycleDriver(lightsInCycle,cycleSpeed)
-
-def done(lights):
-    global isDone
-    isDone = True
-    for light in lights:
-        light.set_power(False)
-    sys.exit()
 if __name__ == '__main__':
     lightLabels = []
     timeToCycle = cycleSpeed = None
@@ -120,4 +135,5 @@ if __name__ == '__main__':
                 cycleSpeed = userChoice
             except ValueError:
                 print('Invalid minutes for each cycle. Try again')
-    driver(lightsToUseBasedOnLabels,timeToCycle,cycleSpeed)
+    scheduleCycle = ScheduleCycle()
+    scheduleCycle.driver(lightsToUseBasedOnLabels,timeToCycle,cycleSpeed)
