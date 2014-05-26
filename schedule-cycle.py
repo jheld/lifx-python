@@ -19,7 +19,7 @@ class ScheduleCycle():
         self.speed = 0
     def setLights(self, lights):
         self.lights = lights;
-    def timeToRun(self, timeToRun):
+    def setTimeToRun(self, timeToRun):
         self.timeToRun = timeToRun
     def timeCycleDriver(self):
         if self.lights and len(self.lights) > 1:
@@ -31,25 +31,24 @@ class ScheduleCycle():
                     light.set_power(False)
                 with open('cycle_report.txt', 'a') as myfile:
                     myfile.write('light {lighton} is now on at unixTime: {utime}\n'.format(lighton=self.lights[0].bulb_label,utime=time.time()))
-                self.lights.append(lightsCycle[0])
-                self.lights.remove(lightsCycle[0])
-                timer = threading.Timer(minutes*60,timeCycleDriver)
+                self.lights.append(self.lights[0])
+                self.lights.remove(self.lights[0])
+                timer = threading.Timer(minutes*60,self.timeCycleDriver)
                 timer.start()
             else:
                 for light in self.lights:
                     light.set_power(False)
     def setSpeed(self,speed):
         self.speed = speed
-    def driver(lightsInCycle,timeToCycle,cycleSpeed):
-        os.remove('cycle_report.txt')
+    def driver(self, lightsInCycle,timeToCycle,cycleSpeed):
         self.setLights(lightsInCycle)
         self.setSpeed(cycleSpeed)
         self.setTimeToRun(timeToCycle)
-        timer = threading.Timer(timeToCycle*60,done)
+        timer = threading.Timer(timeToCycle*60,self.done)
         timer.start()
         self.timeCycleDriver()
 
-    def done(self, lights):
+    def done(self):
         self.isDone = True
         self.timeCycleDriver()
     
