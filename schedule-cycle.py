@@ -8,49 +8,59 @@ import sys
 import os
 import threading
 
-isDone = False
-
 class ScheduleCycle():
     def __init__(self):
         super().__init__()
-        self.isDone = False
-        self.lights = []
-        self.timeToRun = 0
-        self.speed = 0
-    def setLights(self, lights):
-        self.lights = lights;
-    def setTimeToRun(self, timeToRun):
-        self.timeToRun = timeToRun
-    def timeCycleDriver(self):
-        if self.lights and len(self.lights) > 1:
-            if not self.isDone:
-                minutes = float(abs(self.speed))
-                print('unixTime: {utime}-->{light} will go on, now for {time} minute(s); the rest in cycle will go off'.format(utime=time.time(),light=self.lights[0].bulb_label,time=minutes))
-                self.lights[0].set_power(True)
-                for light in self.lights[1:]:
+        self.configuration = {}
+    def addConfiguration(self, lights, time, speed):
+        bulbLabels = []
+        for light in lights:
+            bulbLabels.append(light.bulb_label)
+        bulbLabels = sorted(bulbLabels)
+        bulbLabels = str(bulbLabels)
+        configuration = None
+        if not bulbLabels in self.configuration.keys():
+            self.configuration[bulbLabels] = {}
+            self.configuration[bulbLabels]['lights'] = lights
+            self.configuration[bulbLabels]['speed'] = speed
+            self.configuration[bulbLabels]['time'] = time
+            self.configuration[bulbLabels]['isDone'] = False
+            configuration = bulbLabels
+        return configuration
+    def timeCycleDriver(self,key):
+        lights = []
+        if key in self.configuration.keys():
+            lights = self.configuration[key]['lights']
+        if lights and len(lights) > 1:
+            if not self.configuration[key]['isDone']:
+                speed = self.configuration[key]['speed']
+                minutes = float(abs(speed))
+                print('unixTime: {utime}-->{light} will go on, now for {time} minute(s); the rest in cycle will go off'.format(utime=time.time(),light=lights[0].bulb_label,time=minutes))
+                lights[0].set_power(True)
+                for light in lights[1:]:
                     light.set_power(False)
                 with open('cycle_report.txt', 'a') as myfile:
-                    myfile.write('light {lighton} is now on at unixTime: {utime}\n'.format(lighton=self.lights[0].bulb_label,utime=time.time()))
-                self.lights.append(self.lights[0])
-                self.lights.remove(self.lights[0])
-                timer = threading.Timer(minutes*60,self.timeCycleDriver)
+                    myfile.write('light {lighton} is now on at unixTime: {utime}\n'.format(lighton=lights[0].bulb_label,utime=time.time()))
+                lights.append(lights[0])
+                lights.remove(lights[0])
+                self.configuration[key]['lights'] = lights
+                timer = threading.Timer(minutes*60,self.timeCycleDriver,args=[key])
                 timer.start()
             else:
-                for light in self.lights:
+                for light in lights:
                     light.set_power(False)
-    def setSpeed(self,speed):
-        self.speed = speed
-    def driver(self, lightsInCycle,timeToCycle,cycleSpeed):
-        self.setLights(lightsInCycle)
-        self.setSpeed(cycleSpeed)
-        self.setTimeToRun(timeToCycle)
-        timer = threading.Timer(timeToCycle*60,self.done)
-        timer.start()
-        self.timeCycleDriver()
+                self.configuration.pop(key)
+    def driver(self,lightsInCycle,timeToCycle,cycleSpeed):
+        key = self.addConfiguration(lightsInCycle,timeToCycle,cycleSpeed)
+        if key:
+            callDoneInSeconds = self.configuration[key]['time']
+            timer = threading.Timer(callDoneInSeconds*60,self.done,args=[key])
+            timer.start()
+            self.timeCycleDriver(key)
 
-    def done(self):
-        self.isDone = True
-        self.timeCycleDriver()
+    def done(self,key):
+        self.configuration[key]['isDone'] = True
+        self.timeCycleDriver(key)
     
 def startUp():
     parser = argparse.ArgumentParser(description='Simple lights on/off cycling through a list of bulbs.')
