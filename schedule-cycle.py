@@ -9,9 +9,10 @@ import os
 import threading
 
 class ScheduleCycle():
-    def __init__(self):
+    def __init__(self,verbose=False):
         super().__init__()
         self.configuration = {}
+        self.verbose = verbose
     def addConfiguration(self, lights, time, speed):
         bulbLabels = []
         for light in lights:
@@ -35,12 +36,14 @@ class ScheduleCycle():
             if not self.configuration[key]['isDone']:
                 speed = self.configuration[key]['speed']
                 minutes = float(abs(speed))
-                print('unixTime: {utime}-->{light} will go on, now for {time} minute(s); the rest in cycle will go off'.format(utime=time.time(),light=lights[0].bulb_label,time=minutes))
+                if self.verbose:
+                    print('unixTime: {utime}-->{light} will go on, now for {time} minute(s); the rest in cycle will go off'.format(utime=time.time(),light=lights[0].bulb_label,time=minutes))
                 lights[0].set_power(True)
                 for light in lights[1:]:
                     light.set_power(False)
-                with open('cycle_report.txt', 'a') as myfile:
-                    myfile.write('light {lighton} is now on at unixTime: {utime}\n'.format(lighton=lights[0].bulb_label,utime=time.time()))
+                if self.verbose:
+                    with open('cycle_report.txt', 'a') as myfile:
+                        myfile.write('light {lighton} is now on at unixTime: {utime}\n'.format(lighton=lights[0].bulb_label,utime=time.time()))
                 lights.append(lights[0])
                 lights.remove(lights[0])
                 self.configuration[key]['lights'] = lights
@@ -78,6 +81,9 @@ def startUp():
                         help='amount of time in minutes between switch cycle per bulb',
                         type=float,
                         nargs=1)
+    parser.add_argument('-v','--verbose',
+                        help='whether or not the script prints and logs the bulb cycle information',
+                        action='count')
     args = parser.parse_args()
     return vars(args)
 
@@ -146,5 +152,5 @@ if __name__ == '__main__':
                 cycleSpeed = userChoice
             except ValueError:
                 print('Invalid minutes for each cycle. Try again')
-    scheduleCycle = ScheduleCycle()
+    scheduleCycle = ScheduleCycle(verbose=rtnArgs['verbose'])
     scheduleCycle.driver(lightsToUseBasedOnLabels,timeToCycle,cycleSpeed)
